@@ -22,7 +22,7 @@
 
 全书围绕虚构项目 `mini-library`（Java 17 + Spring Boot 3）展开，所有示例、反例、Prompt 模板、Harness 配置都可以复用到你自己的项目里。
 
-**配套实验仓库**：[ai-coding-mini-library](https://github.com/YOUR_ORG/ai-coding-mini-library)（含所有可跑代码、三代对照、黄金用例集与夜跑管线）。
+**配套实验仓库**：[ai-coding-mini-library](https://github.com/AustinCao/ai-coding-mini-library)（含所有可跑代码、三代对照、黄金用例集与夜跑管线）。
 
 ## 目录
 
