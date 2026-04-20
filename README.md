@@ -24,7 +24,7 @@
 
 全书围绕虚构项目 `mini-library`（Java 17 + Spring Boot 3）展开，所有示例、反例、Prompt 模板都在配套代码仓库里可以直接跑。
 
-**配套实验仓库**：[ai-coding-mini-library](https://github.com/AustinCao/ai-coding-mini-library)（含所有可跑代码、三阶段对照、黄金用例集与夜跑管线）。
+**配套实验仓库**：[ai-coding-mini-library](https://github.com/austincao/ai-coding-mini-library)（含所有可跑代码、三阶段对照、黄金用例集与夜跑管线）。
 
 ---
 
@@ -96,7 +96,7 @@ ai-coding-mini-library/
 **5 分钟上手（完全离线）**：
 
 ```bash
-git clone https://github.com/AustinCao/ai-coding-mini-library.git
+git clone https://github.com/austincao/ai-coding-mini-library.git
 cd ai-coding-mini-library
 cd app && mvn test && cd ..                              # Java 单测
 pip install -r eval/scripts/requirements.txt
