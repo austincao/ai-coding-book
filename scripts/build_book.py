@@ -337,6 +337,65 @@ img {
     border: 1px solid var(--border);
     border-radius: 4px;
 }
+
+/* 响应式表格：手机端转为卡片布局 */
+@media screen and (max-width: 500px) {
+    .table-wrapper {
+        border: none;
+    }
+    .table-wrapper table, 
+    .table-wrapper thead, 
+    .table-wrapper tbody, 
+    .table-wrapper th, 
+    .table-wrapper td, 
+    .table-wrapper tr { 
+        display: block; 
+        width: 100%;
+        box-sizing: border-box;
+    }
+    /* 隐藏表头 */
+    .table-wrapper thead tr { 
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    .table-wrapper tr { 
+        border: 1px solid var(--orange);
+        margin-bottom: 1.2rem;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0.5rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .table-wrapper td { 
+        border: none;
+        border-bottom: 1px solid var(--orange-light); 
+        position: relative;
+        padding: 0.6rem 0.6rem 0.6rem 5.5rem; 
+        text-align: left;
+        min-height: 2.5rem;
+        font-size: 0.95em;
+    }
+    .table-wrapper td:last-child {
+        border-bottom: 0;
+    }
+    /* 注入标签 */
+    .table-wrapper td:before { 
+        position: absolute;
+        top: 0.6rem;
+        left: 0.6rem;
+        width: 4.5rem; 
+        padding-right: 0.5rem; 
+        white-space: nowrap;
+        content: attr(data-label);
+        font-weight: bold;
+        color: var(--orange);
+        font-size: 0.85em;
+        border-right: 1px solid var(--orange-light);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
 .toc {
     background: var(--orange-light);
     border: 1px solid var(--orange);
@@ -494,8 +553,58 @@ def find_browser() -> str | None:
 
 
 def rewrite_image_paths(md: str) -> str:
-    """把相对 ../assets/ 的引用重写成 dist/ 下可见的 assets/"""
-    return md.replace("](../assets/", "](assets/")
+    """把相对 ../assets/ 的引用重写成 dist/ 下可见的 assets/（Markdown 链接与 HTML img src）"""
+    md = md.replace("](../assets/", "](assets/")
+    md = md.replace('src="../assets/', 'src="assets/')
+    md = md.replace("src='../assets/", "src='assets/")
+    return md
+
+
+def wrap_tables(html: str) -> str:
+    """给所有 table 套一层 .table-wrapper，并为 td 注入 data-label 用于移动端卡片化"""
+    import re
+    
+    # 1. 寻找每一个 table
+    table_pattern = re.compile(r'<table>(.*?)</table>', re.DOTALL)
+    
+    def _process_single_table(table_match):
+        content = table_match.group(1)
+        
+        # 2. 提取 thead 中的 headers
+        headers = []
+        thead_match = re.search(r'<thead>(.*?)</thead>', content, re.DOTALL)
+        if thead_match:
+            headers = re.findall(r'<th[^>]*>(.*?)</th>', thead_match.group(1), re.DOTALL)
+            # 清理 header 里的 HTML 标签
+            headers = [re.sub(r'<[^>]+>', '', h).strip() for h in headers]
+            
+        if not headers:
+            return f'<div class="table-wrapper"><table>{content}</table></div>'
+            
+        # 3. 处理 tbody 中的每一行，注入 data-label
+        def _process_row(row_match):
+            row_content = row_match.group(1)
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row_content, re.DOTALL)
+            
+            new_cells = []
+            for i, cell_content in enumerate(cells):
+                label = headers[i] if i < len(headers) else ""
+                # 注入 data-label 属性
+                new_cells.append(f'<td data-label="{label}">{cell_content}</td>')
+            
+            return f'<tr>{"".join(new_cells)}</tr>'
+
+        # 只替换 tbody 里的 tr
+        if '<tbody>' in content:
+            parts = content.split('<tbody>', 1)
+            tbody_processed = re.sub(r'<tr>(.*?)</tr>', _process_row, parts[1], flags=re.DOTALL)
+            new_table_content = parts[0] + '<tbody>' + tbody_processed
+        else:
+            new_table_content = re.sub(r'<tr>(.*?)</tr>', _process_row, content, flags=re.DOTALL)
+            
+        return f'<div class="table-wrapper"><table>{new_table_content}</table></div>'
+
+    return table_pattern.sub(_process_single_table, html)
 
 
 # ── 合并 ──────────────────────────────────────────────────────────
@@ -533,6 +642,7 @@ def markdown_to_html(md_text: str) -> tuple[str, str]:
     }
     md = markdown.Markdown(extensions=extensions, extension_configs=extension_configs)
     html_body = md.convert(md_text)
+    html_body = wrap_tables(html_body)
     toc_html = getattr(md, "toc", "")
     return html_body, toc_html
 
@@ -618,11 +728,64 @@ pre { background: #F7F7F7; border-left: 4px solid #E67E22;
       font-size: 0.85em; overflow-x: auto;
       white-space: pre-wrap; word-wrap: break-word; }
 pre code { background: none; color: #333; padding: 0; }
-table { width: 100%; border-collapse: collapse; margin: 0.7em 0;
-        font-size: 0.9em; display: block; overflow-x: auto; }
-th, td { border: 1px solid #DDD; padding: 0.3em 0.5em; }
-th { background: #FDF2E9; }
-img { max-width: 100%; margin: 0.8em auto; display: block; }
+/* 响应式表格：手机端转为卡片布局 */
+@media screen and (max-width: 500px) {
+    .table-wrapper {
+        border: none;
+    }
+    .table-wrapper table, 
+    .table-wrapper thead, 
+    .table-wrapper tbody, 
+    .table-wrapper th, 
+    .table-wrapper td, 
+    .table-wrapper tr { 
+        display: block; 
+        width: 100%;
+        box-sizing: border-box;
+    }
+    /* 隐藏表头 */
+    .table-wrapper thead tr { 
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    .table-wrapper tr { 
+        border: 1px solid #E67E22;
+        margin-bottom: 1.2rem;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0.5rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .table-wrapper td { 
+        border: none;
+        border-bottom: 1px solid #FDF2E9; 
+        position: relative;
+        padding: 0.6rem 0.6rem 0.6rem 5.5rem; 
+        text-align: left;
+        min-height: 2.5rem;
+        font-size: 0.95em;
+    }
+    .table-wrapper td:last-child {
+        border-bottom: 0;
+    }
+    /* 注入标签 */
+    .table-wrapper td:before { 
+        position: absolute;
+        top: 0.6rem;
+        left: 0.6rem;
+        width: 4.5rem; 
+        padding-right: 0.5rem; 
+        white-space: nowrap;
+        content: attr(data-label);
+        font-weight: bold;
+        color: #E67E22;
+        font-size: 0.85em;
+        border-right: 1px solid #FDF2E9;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
 strong { color: #000; }
 hr { border: none; border-top: 1px dashed #CCC; margin: 1.5em 0; }
 ul, ol { margin: 0.3em 0 0.5em 1.5em; }
